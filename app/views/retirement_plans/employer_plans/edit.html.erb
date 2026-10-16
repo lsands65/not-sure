@@ -1,0 +1,66 @@
+<div class="max-w-3xl space-y-6 pb-6 lg:pb-12">
+  <header>
+    <h1 class="text-2xl font-semibold text-primary"><%= t(".heading", name: @member.name) %></h1>
+    <p class="text-sm text-secondary mt-1"><%= t(".subtitle") %></p>
+  </header>
+
+  <%= styled_form_with model: @employer_plan, scope: :employer_plan,
+                       url: retirement_plan_member_employer_plan_path(@plan, @member), method: :patch, class: "space-y-6" do |f| %>
+    <% if @employer_plan.errors.any? %>
+      <%= render DS::Alert.new(title: t(".errors"), variant: :error) do %>
+        <ul class="list-disc pl-4">
+          <% @employer_plan.errors.full_messages.each do |message| %>
+            <li><%= message %></li>
+          <% end %>
+        </ul>
+      <% end %>
+    <% end %>
+
+    <%= render DS::Card.new(class: "gap-4") do %>
+      <h2 class="text-base font-medium text-primary"><%= t(".plan") %></h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <%= f.text_field :employer_name, label: t(".employer_name") %>
+        <%= f.select :plan_type, RetirementPlan::EmployerPlan::PLAN_TYPES.map { |type| [ t("retirement_plans.shared.plan_types.#{type}"), type ] },
+                     { label: t(".plan_type") } %>
+        <%= f.select :account_id, @plan_accounts.map { |account| [ account.name, account.id ] },
+                     { label: t(".account"), include_blank: t(".no_account") } %>
+        <%= f.number_field :expense_ratio_percent, label: t(".expense_ratio"), step: 0.01, min: 0, help_text: t(".expense_ratio_help") %>
+      </div>
+    <% end %>
+
+    <%= render DS::Card.new(class: "gap-4") do %>
+      <h2 class="text-base font-medium text-primary"><%= t(".match") %></h2>
+      <p class="text-sm text-secondary"><%= t(".match_help") %></p>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <%= f.number_field :match_rate_1_percent, label: t(".match_rate_1"), step: 1, min: 0 %>
+        <%= f.number_field :match_up_to_1_percent, label: t(".match_up_to_1"), step: 0.5, min: 0 %>
+        <%= f.number_field :match_rate_2_percent, label: t(".match_rate_2"), step: 1, min: 0 %>
+        <%= f.number_field :match_up_to_2_percent, label: t(".match_up_to_2"), step: 0.5, min: 0 %>
+        <%= f.number_field :nonelective_rate_percent, label: t(".nonelective_rate"), step: 0.5, min: 0 %>
+        <%= f.select :match_true_up, retirement_yes_no_options, { label: t(".match_true_up"), include_blank: t(".not_sure"), help_text: t(".match_true_up_help") } %>
+      </div>
+    <% end %>
+
+    <%= render DS::Card.new(class: "gap-4") do %>
+      <h2 class="text-base font-medium text-primary"><%= t(".vesting") %></h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <%= f.select :vesting_type, RetirementPlan::EmployerPlan::VESTING_TYPES.map { |type| [ t("retirement_plans.shared.vesting_types.#{type}"), type ] },
+                     { label: t(".vesting_type"), include_blank: t(".not_sure") } %>
+        <%= f.number_field :vesting_years, label: t(".vesting_years"), min: 1, step: 1 %>
+        <%= f.date_field :service_start_date, label: t(".service_start_date") %>
+      </div>
+    <% end %>
+
+    <%= render DS::Card.new(class: "gap-4") do %>
+      <h2 class="text-base font-medium text-primary"><%= t(".features") %></h2>
+      <p class="text-sm text-secondary"><%= t(".features_help") %></p>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <% %i[roth_option after_tax_allowed in_plan_roth_conversion in_service_withdrawal accepts_rollovers hdhp_available].each do |feature| %>
+          <%= f.select feature, retirement_yes_no_options, { label: t(".#{feature}"), include_blank: t(".not_sure") } %>
+        <% end %>
+      </div>
+    <% end %>
+
+    <%= f.submit t(".submit") %>
+  <% end %>
+</div>

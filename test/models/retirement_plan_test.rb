@@ -72,8 +72,11 @@ class RetirementPlanTest < ActiveSupport::TestCase
     assert_equal projection.monte_carlo.years.size, projection.deterministic.years.size
   end
 
-  test "only links the family's own asset accounts" do
+  test "only links the family's own cash, investment and crypto accounts" do
     link = @plan.account_links.build(account: accounts(:credit_card))
+    assert_not link.valid?
+
+    link = @plan.account_links.build(account: accounts(:property))
     assert_not link.valid?
 
     other_family_account = accounts(:investment).dup.tap { |a| a.family = families(:empty) }
@@ -107,6 +110,22 @@ class RetirementPlanTest < ActiveSupport::TestCase
     assert_difference -> { RetirementPlan.count }, -1 do
       Family.where(id: family.id).delete_all
     end
+  end
+
+  test "lists the questions to ask before trusting the numbers" do
+    questions = @plan.missing_inputs.map { |subject, attribute| [ subject.class.name, attribute ] }
+
+    assert_includes questions, [ "RetirementPlan::Member", :paycheck ]
+    assert_includes questions, [ "RetirementPlan::Member", :employer_plan ]
+    # The fixture brokerage has no subtype, so its bucket is only a guess.
+    assert_includes questions, [ "RetirementPlan::AccountLink", :tax_bucket ]
+    assert_not_includes questions, [ "RetirementPlan", :filing_status ]
+  end
+
+  test "member age counts birthdays, not calendar years" do
+    member = retirement_plan_members(:dylan_primary) # born 1980-06-15
+    assert_equal 45, member.age(on: Date.new(2026, 6, 14))
+    assert_equal 46, member.age(on: Date.new(2026, 6, 15))
   end
 
   private

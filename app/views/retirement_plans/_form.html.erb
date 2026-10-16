@@ -1,0 +1,65 @@
+<%# locals: (plan:) %>
+<%= styled_form_with model: plan, class: "space-y-6" do |f| %>
+  <% if plan.errors.any? %>
+    <%= render DS::Alert.new(title: t(".errors"), variant: :error) do %>
+      <ul class="list-disc pl-4">
+        <% plan.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    <% end %>
+  <% end %>
+
+  <%= render DS::Card.new(class: "gap-4") do %>
+    <h2 class="text-base font-medium text-primary"><%= t(".household") %></h2>
+    <%= f.text_field :name, label: t(".name"), required: true %>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <%= f.select :filing_status,
+                   RetirementPlan::FILING_STATUSES.map { |status| [ t("retirement_plans.shared.filing_statuses.#{status}"), status ] },
+                   { label: t(".filing_status"), include_blank: t(".not_set") } %>
+      <%= f.select :state, RetirementPlan::US_STATES, { label: t(".state"), include_blank: t(".not_set") } %>
+    </div>
+
+    <%= f.fields_for :members do |mf| %>
+      <fieldset class="space-y-3 border-t border-primary pt-4">
+        <legend class="text-sm font-medium text-primary">
+          <%= mf.object.position.zero? ? t(".first_person") : t(".second_person") %>
+        </legend>
+        <%= mf.hidden_field :position %>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <%= mf.text_field :name, label: t(".person_name") %>
+          <%= mf.date_field :birth_date, label: t(".birth_date") %>
+          <%= mf.number_field :retirement_age, label: t(".retirement_age"), min: 1, max: 120 %>
+          <%= mf.number_field :planning_age, label: t(".planning_age"), min: 1, max: 120,
+                              help_text: t(".planning_age_help") %>
+        </div>
+        <% if mf.object.persisted? && mf.object.position.positive? %>
+          <label class="flex items-center gap-2 text-sm text-secondary">
+            <%= mf.check_box :_destroy %>
+            <%= t(".remove_person") %>
+          </label>
+        <% end %>
+      </fieldset>
+    <% end %>
+  <% end %>
+
+  <%= render DS::Card.new(class: "gap-4") do %>
+    <h2 class="text-base font-medium text-primary"><%= t(".spending") %></h2>
+    <%= f.number_field :annual_spending_override, label: t(".annual_spending_override"), step: 1, min: 0,
+                       help_text: t(".annual_spending_override_help") %>
+    <%= f.number_field :withdrawal_rate_percent, label: t(".withdrawal_rate"), step: 0.1, min: 0.1, max: 99 %>
+  <% end %>
+
+  <%= render DS::Card.new(class: "gap-4") do %>
+    <h2 class="text-base font-medium text-primary"><%= t(".assumptions") %></h2>
+    <p class="text-sm text-secondary"><%= t(".assumptions_help") %></p>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <%= f.number_field :expected_return_percent, label: t(".expected_return"), step: 0.1 %>
+      <%= f.number_field :return_volatility_percent, label: t(".return_volatility"), step: 0.1, min: 0 %>
+      <%= f.number_field :inflation_rate_percent, label: t(".inflation_rate"), step: 0.1 %>
+      <%= f.number_field :traditional_tax_rate_percent, label: t(".traditional_tax_rate"), step: 0.1, min: 0, max: 99 %>
+    </div>
+  <% end %>
+
+  <%= f.submit t(".submit") %>
+<% end %>

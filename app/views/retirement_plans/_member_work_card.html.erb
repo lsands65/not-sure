@@ -1,0 +1,48 @@
+<%# locals: (plan:, member:) %>
+<% paycheck = member.paycheck %>
+<% employer_plan = member.employer_plan %>
+<% match = member.match_check %>
+<%= render DS::Card.new(class: "gap-3") do %>
+  <h2 class="text-base font-medium text-primary"><%= t(".title", name: member.name) %></h2>
+
+  <div class="flex items-center justify-between gap-2">
+    <h3 class="text-sm font-medium text-primary"><%= t(".paycheck") %></h3>
+    <%= render DS::Link.new(text: paycheck ? t(".edit") : t(".add"), variant: "secondary", size: "sm",
+          href: edit_retirement_plan_member_paycheck_path(plan, member)) %>
+  </div>
+  <% if paycheck %>
+    <dl class="space-y-2">
+      <%= render DS::DetailRow.new(label: t(".annual_gross"), value: format_money(Money.new(paycheck.annual_gross, plan.currency))) %>
+      <%= render DS::DetailRow.new(label: t(".deferral_rate"), value: retirement_percent(paycheck.deferral_rate)) %>
+      <%= render DS::DetailRow.new(label: t(".payroll_savings"), value: format_money(Money.new(paycheck.annual_payroll_savings, plan.currency))) %>
+    </dl>
+  <% else %>
+    <p class="text-sm text-secondary"><%= t(".no_paycheck") %></p>
+  <% end %>
+
+  <div class="flex items-center justify-between gap-2 border-t border-primary pt-3">
+    <h3 class="text-sm font-medium text-primary"><%= t(".employer_plan") %></h3>
+    <%= render DS::Link.new(text: employer_plan ? t(".edit") : t(".add"), variant: "secondary", size: "sm",
+          href: edit_retirement_plan_member_employer_plan_path(plan, member)) %>
+  </div>
+  <% if employer_plan %>
+    <dl class="space-y-2">
+      <%= render DS::DetailRow.new(label: t(".plan"),
+            value: [ employer_plan.employer_name, t("retirement_plans.shared.plan_types.#{employer_plan.plan_type}") ].compact_blank.join(" · ")) %>
+      <%= render DS::DetailRow.new(label: t(".full_match_at"), value: retirement_percent(employer_plan.full_match_deferral_rate)) %>
+      <%= render DS::DetailRow.new(label: t(".vested"), value: retirement_percent(employer_plan.vested_fraction, precision: 0)) %>
+    </dl>
+  <% else %>
+    <p class="text-sm text-secondary"><%= t(".no_employer_plan") %></p>
+  <% end %>
+
+  <% case match.status %>
+  <% when :captured %>
+    <%= render DS::Alert.new(variant: :success,
+          message: t(".match_captured", match: format_money(Money.new(match.annual_match, plan.currency)))) %>
+  <% when :missing_match %>
+    <%= render DS::Alert.new(variant: :warning,
+          message: t(".match_missing", needed: retirement_percent(match.needed_rate), current: retirement_percent(match.deferral_rate),
+                     missed: format_money(Money.new(match.annual_match_missed, plan.currency)))) %>
+  <% end %>
+<% end %>

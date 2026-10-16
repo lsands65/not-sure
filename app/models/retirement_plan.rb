@@ -7,9 +7,14 @@
 #
 # The projection math lives in Retirement::* POROs, fed by #scenario.
 class RetirementPlan < ApplicationRecord
-  include Monetizable
+  include Monetizable, RetirementPlan::PercentAttributes
 
   MAX_MEMBERS = 2
+  FILING_STATUSES = %w[single married_filing_jointly married_filing_separately head_of_household].freeze
+  US_STATES = %w[
+    AL AK AZ AR CA CO CT DE DC FL GA HI ID IL IN IA KS KY LA ME MD MA MI MN MS MO
+    MT NE NV NH NJ NM NY NC ND OH OK OR PA RI SC SD TN TX UT VT VA WA WV WI WY
+  ].freeze
 
   belongs_to :family
 
@@ -23,7 +28,12 @@ class RetirementPlan < ApplicationRecord
            inverse_of: :retirement_plan, dependent: :destroy
   has_many :linked_accounts, through: :account_links, source: :account
 
-  accepts_nested_attributes_for :members, :contributions, :income_streams, allow_destroy: true
+  # A blank second-person row on the form means "just one person".
+  accepts_nested_attributes_for :members, allow_destroy: true,
+                                reject_if: ->(attributes) { attributes["id"].blank? && attributes["name"].blank? }
+  accepts_nested_attributes_for :contributions, :income_streams, allow_destroy: true
+
+  percent_attribute :inflation_rate, :expected_return, :return_volatility, :withdrawal_rate, :traditional_tax_rate
 
   validates :name, presence: true, length: { maximum: 255 }
   validates :currency, presence: true
@@ -32,14 +42,18 @@ class RetirementPlan < ApplicationRecord
   validates :return_volatility, numericality: { greater_than_or_equal_to: 0, less_than: 1 }
   validates :withdrawal_rate, numericality: { greater_than: 0, less_than: 1 }
   validates :traditional_tax_rate, numericality: { greater_than_or_equal_to: 0, less_than: 1 }
+  validates :filing_status, inclusion: { in: FILING_STATUSES }, allow_nil: true
+  validates :state, inclusion: { in: US_STATES }, allow_nil: true
   validate :one_or_two_members
 
   scope :for_family, ->(family) { where(family:) }
 
   class << self
-    # Accounts a new plan links by default: visible, tax-advantaged assets.
-    def suggested_accounts_for(family)
-      family.accounts.visible.assets.includes(:accountable).select(&:tax_advantaged?)
+    # Accounts a new plan links by default: the visible, tax-advantaged
+    # assets among `accounts` (pass the user's accessible accounts).
+    def suggested_accounts_from(accounts)
+      accounts.visible.where(accountable_type: RetirementPlan::AccountLink::FUNDING_ACCOUNT_TYPES)
+              .includes(:accountable).select(&:tax_advantaged?)
     end
   end
 
@@ -69,6 +83,23 @@ class RetirementPlan < ApplicationRecord
   # counting Social Security or pensions (the Monte Carlo accounts for those).
   def target_portfolio_money
     Money.new(annual_spending / withdrawal_rate, currency)
+  end
+
+  # Inputs the planner should ask for before trusting its own output, as
+  # [subject, attribute] pairs. Subject is the plan, a member or an account link.
+  def missing_inputs
+    questions = []
+    questions << [ self, :filing_status ] if filing_status.nil?
+    questions << [ self, :state ] if state.nil?
+
+    members.each do |member|
+      questions << [ member, :paycheck ] if member.paycheck.nil?
+      questions << [ member, :employer_plan ] if member.employer_plan.nil?
+      member.employer_plan&.missing_inputs&.each { |attribute| questions << [ member.employer_plan, attribute ] }
+    end
+
+    account_links.each { |link| questions << [ link, :tax_bucket ] if link.tax_bucket_ambiguous? }
+    questions
   end
 
   def balances_by_bucket

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_16_120000) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_16_130000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -2260,6 +2260,35 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_16_120000) do
     t.check_constraint "bucket::text = ANY (ARRAY['taxable'::character varying, 'traditional'::character varying, 'roth'::character varying, 'hsa'::character varying]::text[])", name: "chk_retirement_plan_contributions_bucket"
   end
 
+  create_table "retirement_plan_employer_plans", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.boolean "accepts_rollovers"
+    t.uuid "account_id"
+    t.boolean "after_tax_allowed"
+    t.datetime "created_at", null: false
+    t.string "employer_name"
+    t.decimal "expense_ratio", precision: 6, scale: 4
+    t.boolean "hdhp_available"
+    t.boolean "in_plan_roth_conversion"
+    t.boolean "in_service_withdrawal"
+    t.decimal "match_rate_1", precision: 6, scale: 4
+    t.decimal "match_rate_2", precision: 6, scale: 4
+    t.boolean "match_true_up"
+    t.decimal "match_up_to_1", precision: 6, scale: 4
+    t.decimal "match_up_to_2", precision: 6, scale: 4
+    t.uuid "member_id", null: false
+    t.decimal "nonelective_rate", precision: 6, scale: 4
+    t.string "plan_type", default: "401k", null: false
+    t.boolean "roth_option"
+    t.date "service_start_date"
+    t.datetime "updated_at", null: false
+    t.string "vesting_type"
+    t.integer "vesting_years"
+    t.index ["account_id"], name: "index_retirement_plan_employer_plans_on_account_id"
+    t.index ["member_id"], name: "index_retirement_plan_employer_plans_on_member_id", unique: true
+    t.check_constraint "plan_type::text = ANY (ARRAY['401k'::character varying, '403b'::character varying, '457b'::character varying, 'tsp'::character varying, 'other'::character varying]::text[])", name: "chk_retirement_plan_employer_plans_plan_type"
+    t.check_constraint "vesting_type IS NULL OR (vesting_type::text = ANY (ARRAY['immediate'::character varying, 'cliff'::character varying, 'graded'::character varying]::text[]))", name: "chk_retirement_plan_employer_plans_vesting_type"
+  end
+
   create_table "retirement_plan_income_streams", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.decimal "annual_amount", precision: 19, scale: 4, null: false
     t.datetime "created_at", null: false
@@ -2293,21 +2322,43 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_16_120000) do
     t.check_constraint "retirement_age > 0 AND planning_age > retirement_age AND planning_age <= 120", name: "chk_retirement_plan_members_ages"
   end
 
+  create_table "retirement_plan_paychecks", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.decimal "after_tax_401k", precision: 19, scale: 4, default: "0.0", null: false
+    t.decimal "annual_bonus", precision: 19, scale: 4, default: "0.0", null: false
+    t.datetime "created_at", null: false
+    t.decimal "employer_hsa_annual", precision: 19, scale: 4, default: "0.0", null: false
+    t.decimal "gross_pay", precision: 19, scale: 4, null: false
+    t.decimal "health_premiums", precision: 19, scale: 4, default: "0.0", null: false
+    t.decimal "hsa", precision: 19, scale: 4, default: "0.0", null: false
+    t.uuid "member_id", null: false
+    t.decimal "other_pretax", precision: 19, scale: 4, default: "0.0", null: false
+    t.string "pay_frequency", default: "biweekly", null: false
+    t.decimal "roth_401k", precision: 19, scale: 4, default: "0.0", null: false
+    t.decimal "traditional_401k", precision: 19, scale: 4, default: "0.0", null: false
+    t.datetime "updated_at", null: false
+    t.index ["member_id"], name: "index_retirement_plan_paychecks_on_member_id", unique: true
+    t.check_constraint "gross_pay > 0::numeric", name: "chk_retirement_plan_paychecks_gross_positive"
+    t.check_constraint "pay_frequency::text = ANY (ARRAY['weekly'::character varying, 'biweekly'::character varying, 'semimonthly'::character varying, 'monthly'::character varying]::text[])", name: "chk_retirement_plan_paychecks_pay_frequency"
+  end
+
   create_table "retirement_plans", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.decimal "annual_spending_override", precision: 19, scale: 4
     t.datetime "created_at", null: false
     t.string "currency", null: false
     t.decimal "expected_return", precision: 6, scale: 4, default: "0.07", null: false
     t.uuid "family_id", null: false
+    t.string "filing_status"
     t.decimal "inflation_rate", precision: 6, scale: 4, default: "0.025", null: false
     t.string "name", null: false
     t.text "notes"
     t.decimal "return_volatility", precision: 6, scale: 4, default: "0.15", null: false
+    t.string "state", limit: 2
     t.decimal "traditional_tax_rate", precision: 6, scale: 4, default: "0.15", null: false
     t.datetime "updated_at", null: false
     t.decimal "withdrawal_rate", precision: 6, scale: 4, default: "0.04", null: false
     t.index ["family_id"], name: "index_retirement_plans_on_family_id"
     t.check_constraint "annual_spending_override >= 0::numeric", name: "chk_retirement_plans_spending_non_negative"
+    t.check_constraint "filing_status IS NULL OR (filing_status::text = ANY (ARRAY['single'::character varying, 'married_filing_jointly'::character varying, 'married_filing_separately'::character varying, 'head_of_household'::character varying]::text[]))", name: "chk_retirement_plans_filing_status"
     t.check_constraint "return_volatility >= 0::numeric", name: "chk_retirement_plans_volatility_non_negative"
     t.check_constraint "traditional_tax_rate >= 0::numeric AND traditional_tax_rate < 1::numeric", name: "chk_retirement_plans_tax_rate_range"
     t.check_constraint "withdrawal_rate > 0::numeric AND withdrawal_rate < 1::numeric", name: "chk_retirement_plans_withdrawal_rate_range"
@@ -3175,9 +3226,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_16_120000) do
   add_foreign_key "retirement_plan_account_links", "retirement_plans", on_delete: :cascade
   add_foreign_key "retirement_plan_contributions", "retirement_plan_members", column: "member_id", on_delete: :cascade
   add_foreign_key "retirement_plan_contributions", "retirement_plans", on_delete: :cascade
+  add_foreign_key "retirement_plan_employer_plans", "accounts", on_delete: :nullify
+  add_foreign_key "retirement_plan_employer_plans", "retirement_plan_members", column: "member_id", on_delete: :cascade
   add_foreign_key "retirement_plan_income_streams", "retirement_plan_members", column: "member_id", on_delete: :cascade
   add_foreign_key "retirement_plan_income_streams", "retirement_plans", on_delete: :cascade
   add_foreign_key "retirement_plan_members", "retirement_plans", on_delete: :cascade
+  add_foreign_key "retirement_plan_paychecks", "retirement_plan_members", column: "member_id", on_delete: :cascade
   add_foreign_key "retirement_plans", "families", on_delete: :cascade
   add_foreign_key "rule_actions", "rules"
   add_foreign_key "rule_conditions", "rule_conditions", column: "parent_id"

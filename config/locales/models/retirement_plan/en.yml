@@ -20,6 +20,25 @@ en:
         birth_date: Date of birth
         retirement_age: Retirement age
         planning_age: Plan until age
+      retirement_plan/employer_plan:
+        match_rate_1: Match rate
+        match_up_to_1: Matched share of pay
+        match_rate_2: Second-tier match rate
+        match_up_to_2: Second-tier share of pay
+        nonelective_rate: Non-elective contribution
+        expense_ratio: Expense ratio
+        vesting_years: Years to fully vest
+        account: Account
+      retirement_plan/paycheck:
+        gross_pay: Gross pay
+        traditional_401k: Traditional 401(k)
+        roth_401k: Roth 401(k)
+        after_tax_401k: After-tax 401(k)
+        hsa: HSA
+        health_premiums: Health insurance premiums
+        other_pretax: Other pre-tax deductions
+        annual_bonus: Bonuses
+        employer_hsa_annual: Employer HSA contribution
       retirement_plan/account_link:
         tax_bucket: Tax bucket
     errors:
@@ -28,3 +47,11 @@ en:
           attributes:
             members:
               count: A plan covers one or up to %{count} people.
+        retirement_plan/employer_plan:
+          attributes:
+            match_rate_2:
+              requires_first_tier: needs a first-tier match first
+        retirement_plan/paycheck:
+          attributes:
+            base:
+              deductions_exceed_gross: Deductions add up to more than gross pay.

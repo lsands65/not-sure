@@ -1,0 +1,18 @@
+<%# locals: (plan:, balances:) %>
+<%= render DS::Card.new(class: "gap-3") do %>
+  <div class="flex items-center justify-between gap-2">
+    <h2 class="text-base font-medium text-primary"><%= t(".title") %></h2>
+    <%= render DS::Link.new(text: t(".edit"), variant: "secondary", size: "sm", icon: "tags", href: edit_retirement_plan_accounts_path(plan)) %>
+  </div>
+  <% if plan.account_links.empty? %>
+    <p class="text-sm text-secondary"><%= t(".empty") %></p>
+  <% else %>
+    <dl class="space-y-2">
+      <% Retirement::BUCKETS.each do |bucket| %>
+        <%= render DS::DetailRow.new(label: retirement_bucket_label(bucket), value: format_money(Money.new(balances[bucket], plan.currency))) %>
+      <% end %>
+      <%= render DS::DetailRow.new(label: t(".total"), value: format_money(Money.new(balances.values.sum, plan.currency))) %>
+    </dl>
+    <p class="text-xs text-secondary"><%= t(".traditional_note") %></p>
+  <% end %>
+<% end %>

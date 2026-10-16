@@ -35,8 +35,14 @@ turned into a field on `Retirement::Scenario`.
 | `retirement_plan_contributions` | Annual savings per member into one bucket. Stops at that member's retirement. |
 | `retirement_plan_income_streams` | Social Security, pension, annuity, etc. for one member, from `start_age` (the claiming age, for Social Security) to optional `end_age`, either inflation-adjusted or fixed nominal. |
 | `retirement_plan_account_links` | Which Sure accounts fund the plan, with an optional explicit `tax_bucket`. |
+| `retirement_plan_employer_plans` | One per member: match formula (two tiers plus non-elective), true-up, vesting, plan features as nullable yes/no, expense ratio, optional Sure account. |
+| `retirement_plan_paychecks` | One per member, as printed on a pay stub: frequency, gross pay, per-period deductions, plus annual bonus and employer HSA money. |
 
-Every foreign key into an upstream table cascades on delete. Upstream models
+`retirement_plans` also holds `filing_status` and `state`, both nullable
+until the user answers.
+
+Every foreign key into an upstream table cascades on delete, except the
+optional employer-plan account link, which is set to null. Upstream models
 have no associations to these tables.
 
 ### Tax buckets
@@ -51,8 +57,9 @@ the order drawdown spends them in.
   - `tax_exempt` or `tax_advantaged` → roth
   - subtype `hsa` → hsa
   - anything else → taxable
-- Generic subtypes ("Retirement", "Other") can't be classified reliably, so
-  the UI should ask the user to tag them.
+- Generic subtypes ("Retirement", "Pension", "Other", or none) can't be
+  classified reliably. `AccountLink#tax_bucket_ambiguous?` flags them so the
+  plan page asks the user to tag them.
 
 ## Engine rules (invariants)
 
@@ -77,55 +84,81 @@ the order drawdown spends them in.
   otherwise `trailing_annual_spending`, which is total expenses over the last
   12 months via `Family#income_statement`.
 
-## Roadmap
+## Inputs and questions
 
-### Tier 1: the core planner
+Bank transactions show take-home pay only. Pre-tax 401(k) and HSA savings
+never reach a Sure account, so they come from the pay-stub form
+(`RetirementPlan::Paycheck`). Employer plan rules come from
+`RetirementPlan::EmployerPlan`.
 
-| Feature | Status and approach |
-| --- | --- |
-| Retirement target from real spending | **Partly done:** trailing-12-month total and `target_portfolio_money`. Next: split essential from discretionary. Store the essential flag per category in a fork table (`retirement_category_classifications`, keyed by family and category) rather than a column on `categories`. Exclude transfers into linked accounts, then target `essential / withdrawal_rate` alongside the full figure. |
-| Planner inputs page | **Data model done.** Next: `RetirementPlansController`, routes in `config/routes/retirement.rb`, a form built from `DS::*` components with nested members, contributions and income streams. Social Security = an income stream with `kind: social_security` and `start_age` = claiming age. |
-| Account tax buckets | **Done in the data model** (`AccountLink#tax_bucket` with inference). Next: a tagging UI on the plan page. |
-| Monte Carlo with a fan chart | **Engine done.** Next: a `RetirementProjectionJob` that runs `plan.projection` and caches the summary (success rate, p10/p50/p90 bands, deterministic path) in a `retirement_projections` table keyed by plan and an input digest. Recompute when inputs or balances change, plus nightly. Chart: a D3 Stimulus controller modeled on `goal_projection_chart_controller.js`. |
-| Savings-rate sensitivity | **Next.** `Scenario` is a `Data`, so each variant is a `scenario.with(...)` change (extra $500/month in contributions, retirement age + 2, and so on) run through `Projection`. Run variants with fewer trials and the same seed so differences come from the inputs, not sampling noise. |
+**Missing inputs produce a question, never a silent guess.**
 
-### Tier 2: depth
+- Yes/no plan features are nullable booleans. In forms they are a
+  Yes / No / Not sure select.
+- `RetirementPlan#missing_inputs` gathers every unanswered field as a
+  `[subject, attribute]` pair. `RetirementPlansHelper#retirement_question`
+  turns each pair into a question and a link to the page that answers it.
+- Calculations that depend on a missing input return nil or `:unknown`
+  rather than a default. `RetirementPlan::MatchCheck` is the pattern to copy.
+- Rates are stored as fractions (0.07) and typed as percentages (7) through
+  the `RetirementPlan::PercentAttributes` concern (`*_percent` accessors).
 
-- **Historical backtesting.** `Simulator#run` already takes any return
-  sequence. Add a yearly real-returns dataset (for example, a stock/bond mix
-  since 1928) as a fixture-like data file and roll every start year through it.
-- **Withdrawal strategies** (fixed %, guardrails, variable percentage
-  withdrawal). Pull the drawdown step in `Simulator#simulate_year` out into
-  strategy objects that decide the year's spending from the portfolio state.
-  Fixed real spending is today's behavior.
-- **Contribution tracker.** Store yearly IRS limits (401(k), IRA, HSA, catch-up
-  amounts) in a config table, never as constants. Store the employer match on
-  the contribution row.
-- **Allocation versus target**, drift and weighted expense ratio, using Sure
-  holdings and securities.
-- **Milestones** (Coast, Lean and Full FIRE) derived from `annual_spending`,
-  the essential subset and `withdrawal_rate`.
-- **Scenario comparison.** Several plans per family are already allowed. Add
-  a "duplicate plan" action and a side-by-side view.
+**Limits, brackets and phase-outs are never hardcoded.** IRS and state figures
+go in dated data files, each recording the tax year it applies to and a "last
+verified" date checked against the current IRS publication. Federal and
+Wisconsin rules go in separate files.
 
-### Tier 3: more depth
+## Build order
 
-- Roth conversions and tax-bracket filling. This needs a real tax model:
-  federal brackets plus **Wisconsin** state tax. Replace the flat
-  `traditional_tax_rate` with a tax calculator object behind the same
-  interface.
-- Pre-Medicare healthcare costs for early retirement: an age-banded expense
-  stream until 65.
-- Paying off the mortgage versus investing, and the effect of a big purchase
-  on the retirement date. Both are sensitivity variants with one-off cash
-  flows, which needs a dated lump-sum input type.
-- A net-worth milestone timeline, projected versus actual, using Sure's
-  balance history.
+1. **Done:**
+   - employer plan form, with match tiers, true-up, vesting and plan features
+   - pay-stub form
+   - tagging each account's tax bucket
+   - filing status and state
+   - the plan page, which shows open questions and whether the employer
+     match is being captured
+2. Savings capacity from Sure's transactions: income minus spending over 6 to
+   12 months, excluding transfers and one-offs, plus the payroll savings from
+   step 1. Split spending into essential and discretionary, with the essential
+   flag per category stored in a fork table, not on `categories`.
+3. The account recommendation engine (the "waterfall"), with each rule stored
+   as data (`preconditions`, `needs_input`, `flags`, `explanation`) and unit
+   tests for every rule.
+4. Mapping goals to account types by time horizon.
+5. Edge-case rules:
+   - backdoor Roth (pro-rata exposure, Form 8606 basis per tax year,
+     tax-year attribution)
+   - mega backdoor Roth
+   - FIRE access: bridge check, conversion ladder, Rule of 55
+6. Impact preview: rerun the projection per recommendation, run the Monte
+   Carlo as a cached background job, show a fan chart, and run savings-rate
+   sensitivity variants with `scenario.with(...)`.
+7. AI tools on top of the engine output.
+
+Before the FIRE-access rules (step 5) can work, the drawdown step needs to
+know that retirement accounts can't be touched before 59½.
+
+Later tiers:
+- historical backtesting (`Simulator#run` already accepts any return
+  sequence)
+- withdrawal strategies, by extracting the drawdown step into strategy
+  objects
+- allocation drift
+- Coast, Lean and Full FIRE milestones
+- named scenarios (a family can already have several plans)
+- Roth conversion and bracket filling, including Wisconsin
+- pre-Medicare healthcare costs
+- mortgage payoff versus investing
+- a projected-versus-actual net-worth timeline
 
 ## Testing
 
 - Engine: `test/models/retirement/`. Build scenarios by hand. Use zero returns
   and zero inflation for exact arithmetic, and zero volatility to check that
   Monte Carlo agrees with the deterministic path.
-- Persistence: `test/models/retirement_plan_test.rb`, with fixtures in
+- Persistence: `test/models/retirement_plan_test.rb` and
+  `test/models/retirement_plan/`, with fixtures in
   `test/fixtures/retirement_plans.yml` and `test/fixtures/retirement_plan/`.
+- Pages: `test/controllers/retirement_plans_controller_test.rb` and
+  `test/controllers/retirement_plans/`. Every nested page also needs a test
+  showing that another family's plan or member returns 404.

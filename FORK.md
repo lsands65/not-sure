@@ -46,13 +46,17 @@ the PR, or run the merge locally, to get a CI run.
    | --- | --- |
    | Engine (pure Ruby, no ActiveRecord) | `app/models/retirement.rb`, `app/models/retirement/` |
    | Persistence | `app/models/retirement_plan.rb`, `app/models/retirement_plan/` |
+   | Controllers | `app/controllers/retirement_plans_controller.rb`, `app/controllers/retirement_plans/` |
+   | Views and helper | `app/views/retirement_plans/`, `app/helpers/retirement_plans_helper.rb` |
+   | Routes | `config/routes/retirement.rb` |
    | Migrations | `db/migrate/*_retirement_*.rb` |
    | Locales | `config/locales/**/retirement_plan*/en.yml` |
-   | Tests and fixtures | `test/models/retirement*`, `test/fixtures/retirement_plan*` |
+   | Tests and fixtures | `test/models/retirement*`, `test/controllers/retirement_plans*`, `test/fixtures/retirement_plan*` |
    | Guide | `docs/llm-guides/retirement.md` |
 
 2. **Don't add associations to upstream models.** Foreign keys into upstream
-   tables (`families`, `accounts`) use `on_delete: :cascade`, so `Family` and
+   tables (`families`, `accounts`) use `on_delete: :cascade` (or `:nullify`
+   for an optional link), so `Family` and
    `Account` need no `has_many ... dependent:` line. Query with
    `RetirementPlan.for_family(Current.family)`.
 3. **When an upstream file must change, keep it to a line or two** and list it
@@ -67,10 +71,5 @@ the PR, or run the merge locally, to get a CI run.
 | --- | --- | --- |
 | `AGENTS.md` | "Fork" section at the end | Points agents here |
 | `db/schema.rb` | Generated retirement tables | Unavoidable; regenerate, never hand-merge |
-
-Planned (land with the UI):
-
-| File | Change |
-| --- | --- |
-| `config/routes.rb` | `draw :retirement`, with the routes in `config/routes/retirement.rb` |
-| `app/views/plans/show.html.erb` | One `render` line for a retirement card on the Plan hub |
+| `config/routes.rb` | `draw :retirement` after `resource :plan` | Route mount; the routes live in `config/routes/retirement.rb` |
+| `app/views/layouts/application.html.erb` | One "Retirement" entry in the nav item list, after `plan_nav_item` | Nav link |

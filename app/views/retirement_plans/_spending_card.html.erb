@@ -1,0 +1,12 @@
+<%# locals: (plan:) %>
+<%= render DS::Card.new(class: "gap-3") do %>
+  <h2 class="text-base font-medium text-primary"><%= t(".title") %></h2>
+  <dl class="space-y-2">
+    <%= render DS::DetailRow.new(label: t(".actual"), value: format_money(Money.new(plan.trailing_annual_spending, plan.currency))) %>
+    <%= render DS::DetailRow.new(label: t(".planned"),
+          value: plan.annual_spending_override ? format_money(Money.new(plan.annual_spending_override, plan.currency)) : t(".same_as_actual")) %>
+    <%= render DS::DetailRow.new(label: t(".withdrawal_rate"), value: retirement_percent(plan.withdrawal_rate, precision: 2)) %>
+    <%= render DS::DetailRow.new(label: t(".target"), value: format_money(plan.target_portfolio_money)) %>
+  </dl>
+  <p class="text-xs text-secondary"><%= t(".target_help") %></p>
+<% end %>

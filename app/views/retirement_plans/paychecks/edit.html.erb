@@ -1,0 +1,41 @@
+<div class="max-w-3xl space-y-6 pb-6 lg:pb-12">
+  <header>
+    <h1 class="text-2xl font-semibold text-primary"><%= t(".heading", name: @member.name) %></h1>
+    <p class="text-sm text-secondary mt-1"><%= t(".subtitle") %></p>
+  </header>
+
+  <%= styled_form_with model: @paycheck, scope: :paycheck,
+                       url: retirement_plan_member_paycheck_path(@plan, @member), method: :patch, class: "space-y-6" do |f| %>
+    <% if @paycheck.errors.any? %>
+      <%= render DS::Alert.new(title: t(".errors"), variant: :error) do %>
+        <ul class="list-disc pl-4">
+          <% @paycheck.errors.full_messages.each do |message| %>
+            <li><%= message %></li>
+          <% end %>
+        </ul>
+      <% end %>
+    <% end %>
+
+    <%= render DS::Card.new(class: "gap-4") do %>
+      <h2 class="text-base font-medium text-primary"><%= t(".per_paycheck") %></h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <%= f.select :pay_frequency, RetirementPlan::Paycheck::PERIODS_PER_YEAR.keys.map { |frequency| [ t("retirement_plans.shared.pay_frequencies.#{frequency}"), frequency ] },
+                     { label: t(".pay_frequency") } %>
+        <%= f.number_field :gross_pay, label: t(".gross_pay"), step: 0.01, min: 0, required: true %>
+        <% RetirementPlan::Paycheck::DEDUCTIONS.each do |deduction| %>
+          <%= f.number_field deduction, label: t(".#{deduction}"), step: 0.01, min: 0 %>
+        <% end %>
+      </div>
+    <% end %>
+
+    <%= render DS::Card.new(class: "gap-4") do %>
+      <h2 class="text-base font-medium text-primary"><%= t(".per_year") %></h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <%= f.number_field :annual_bonus, label: t(".annual_bonus"), step: 0.01, min: 0, help_text: t(".annual_bonus_help") %>
+        <%= f.number_field :employer_hsa_annual, label: t(".employer_hsa_annual"), step: 0.01, min: 0 %>
+      </div>
+    <% end %>
+
+    <%= f.submit t(".submit") %>
+  <% end %>
+</div>

@@ -1,0 +1,12 @@
+primary:
+  member: dylan_primary
+  pay_frequency: biweekly
+  gross_pay: 4000
+  traditional_401k: 160
+  roth_401k: 0
+  after_tax_401k: 0
+  hsa: 100
+  health_premiums: 150
+  other_pretax: 0
+  annual_bonus: 5000
+  employer_hsa_annual: 500

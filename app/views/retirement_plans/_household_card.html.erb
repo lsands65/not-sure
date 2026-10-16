@@ -1,0 +1,14 @@
+<%# locals: (plan:, members:) %>
+<%= render DS::Card.new(class: "gap-3") do %>
+  <h2 class="text-base font-medium text-primary"><%= t(".title") %></h2>
+  <dl class="space-y-2">
+    <%= render DS::DetailRow.new(label: t(".filing_status"),
+          value: plan.filing_status ? t("retirement_plans.shared.filing_statuses.#{plan.filing_status}") : t("retirement_plans.shared.unknown")) %>
+    <%= render DS::DetailRow.new(label: t(".state"), value: plan.state || t("retirement_plans.shared.unknown")) %>
+    <% members.each do |member| %>
+      <%= render DS::DetailRow.new(label: member.name,
+            value: t(".member_summary", age: member.age, retirement_age: member.retirement_age,
+                     retirement_year: member.birth_date.year + member.retirement_age, planning_age: member.planning_age)) %>
+    <% end %>
+  </dl>
+<% end %>

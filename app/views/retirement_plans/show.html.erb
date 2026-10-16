@@ -1,0 +1,29 @@
+<div class="@container space-y-6 pb-6 lg:pb-12">
+  <header class="flex flex-wrap items-start justify-between gap-3">
+    <div>
+      <h1 class="text-2xl font-semibold text-primary"><%= @plan.name %></h1>
+      <p class="text-sm text-secondary mt-1"><%= t(".subtitle") %></p>
+    </div>
+    <%= render DS::Link.new(text: t(".edit"), variant: "secondary", size: "sm", icon: "pencil", href: edit_retirement_plan_path(@plan)) %>
+  </header>
+
+  <% if @questions.any? %>
+    <%= render DS::Alert.new(title: t(".questions_title", count: @questions.size), variant: :warning) do %>
+      <ul class="space-y-1">
+        <% @questions.each do |subject, attribute| %>
+          <% question = retirement_question(@plan, subject, attribute) %>
+          <li><%= link_to question[:text], question[:path], class: "underline underline-offset-2 hover:no-underline" %></li>
+        <% end %>
+      </ul>
+    <% end %>
+  <% end %>
+
+  <div class="grid grid-cols-1 @3xl:grid-cols-2 gap-4 items-start">
+    <%= render "retirement_plans/household_card", plan: @plan, members: @members %>
+    <%= render "retirement_plans/spending_card", plan: @plan %>
+    <%= render "retirement_plans/accounts_card", plan: @plan, balances: @balances %>
+    <% @members.each do |member| %>
+      <%= render "retirement_plans/member_work_card", plan: @plan, member: member %>
+    <% end %>
+  </div>
+</div>

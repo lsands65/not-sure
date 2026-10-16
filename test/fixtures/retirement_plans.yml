@@ -8,3 +8,5 @@ dylan_plan:
   return_volatility: 0.15
   withdrawal_rate: 0.04
   traditional_tax_rate: 0.15
+  filing_status: married_filing_jointly
+  state: WI

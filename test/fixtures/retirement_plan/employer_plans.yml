@@ -1,0 +1,17 @@
+primary_401k:
+  member: dylan_primary
+  employer_name: Acme
+  plan_type: 401k
+  match_rate_1: 1.0
+  match_up_to_1: 0.03
+  match_rate_2: 0.5
+  match_up_to_2: 0.02
+  match_true_up: true
+  vesting_type: immediate
+  roth_option: true
+  after_tax_allowed: false
+  in_plan_roth_conversion: false
+  in_service_withdrawal: false
+  accepts_rollovers: true
+  hdhp_available: true
+  expense_ratio: 0.0005

@@ -1,0 +1,207 @@
+---
+en:
+  retirement_plans:
+    nav: Retirement
+    shared:
+      unknown: Not set
+      "yes": "Yes"
+      "no": "No"
+      buckets:
+        taxable: Taxable
+        traditional: Traditional (pre-tax)
+        roth: Roth
+        hsa: HSA
+      filing_statuses:
+        single: Single
+        married_filing_jointly: Married filing jointly
+        married_filing_separately: Married filing separately
+        head_of_household: Head of household
+      plan_types:
+        401k: 401(k)
+        403b: 403(b)
+        457b: 457(b)
+        tsp: Thrift Savings Plan
+        other: Other
+      vesting_types:
+        immediate: Immediate
+        cliff: Cliff
+        graded: Graded
+      pay_frequencies:
+        weekly: Weekly
+        biweekly: Every two weeks
+        semimonthly: Twice a month
+        monthly: Monthly
+    questions:
+      plan:
+        filing_status: What is your tax filing status?
+        state: Which state do you live in?
+      member:
+        paycheck: Add %{name}'s paycheck so pre-tax savings are counted.
+        employer_plan: Add %{name}'s employer retirement plan, or note that there isn't one.
+      employer_plan:
+        match_rate_1: How much does %{name}'s employer match?
+        match_up_to_1: Up to what percentage of pay does %{name}'s employer match?
+        match_true_up: Does %{name}'s plan do a match true-up?
+        vesting_type: How does %{name}'s employer match vest?
+        vesting_years: Over how many years does %{name}'s match vest?
+        service_start_date: When did %{name} start at this employer?
+        roth_option: Does %{name}'s plan offer Roth contributions?
+        after_tax_allowed: Does %{name}'s plan allow after-tax contributions?
+        in_plan_roth_conversion: Does %{name}'s plan allow in-plan Roth conversions?
+        in_service_withdrawal: Does %{name}'s plan allow in-service withdrawals?
+        accepts_rollovers: Does %{name}'s plan accept incoming rollovers?
+        hdhp_available: Does %{name}'s employer offer an HSA-eligible health plan?
+        expense_ratio: What is the expense ratio of the fund %{name} uses in the plan?
+      account_link:
+        tax_bucket: Which tax bucket is %{account}?
+    form:
+      errors: Fix these before saving
+      household: Household
+      name: Plan name
+      filing_status: Filing status
+      state: State
+      not_set: Not set
+      first_person: You
+      second_person: Spouse or partner (optional)
+      person_name: Name
+      birth_date: Date of birth
+      retirement_age: Retirement age
+      planning_age: Plan until age
+      planning_age_help: Your life expectancy, with some margin. 95 is a common choice.
+      remove_person: Remove this person from the plan
+      spending: Spending
+      annual_spending_override: Planned annual spending in retirement
+      annual_spending_override_help: Leave blank to use what you actually spent over the last 12 months.
+      withdrawal_rate: Withdrawal rate (%)
+      assumptions: Assumptions
+      assumptions_help: Nominal annual figures. The planner converts them to today's money.
+      expected_return: Expected return (%)
+      return_volatility: Return volatility (%)
+      inflation_rate: Inflation (%)
+      traditional_tax_rate: Tax rate on traditional withdrawals (%)
+      submit: Save plan
+    new:
+      default_name: Our retirement
+      heading: Set up retirement planning
+      subtitle: Start with who the plan covers. Pay, employer plans and accounts come next.
+    create:
+      success: Retirement plan created.
+    edit:
+      heading: Edit plan
+    update:
+      success: Plan saved.
+    destroy:
+      success: Retirement plan deleted.
+    show:
+      subtitle: Inputs the planner needs. Projections come next.
+      edit: Edit plan
+      questions_title:
+        one: 1 question before the numbers can be trusted
+        other: "%{count} questions before the numbers can be trusted"
+    household_card:
+      title: Household
+      filing_status: Filing status
+      state: State
+      member_summary: "Age %{age}, retiring at %{retirement_age} (%{retirement_year}), planning to %{planning_age}"
+    spending_card:
+      title: Spending and target
+      actual: Spent in the last 12 months
+      planned: Planned retirement spending
+      same_as_actual: Same as the last 12 months
+      withdrawal_rate: Withdrawal rate
+      target: Target portfolio
+      target_help: Planned spending divided by the withdrawal rate, before Social Security and pensions.
+    accounts_card:
+      title: Accounts by tax bucket
+      edit: Tag accounts
+      empty: No accounts are linked yet.
+      total: Total
+      traditional_note: Traditional balances are before tax, so they're worth less to spend than the same amount in Roth or taxable accounts.
+    member_work_card:
+      title: "%{name}: work and pay"
+      paycheck: Paycheck
+      employer_plan: Employer plan
+      add: Add
+      edit: Edit
+      annual_gross: Gross pay per year
+      deferral_rate: 401(k) contribution rate
+      payroll_savings: Saved through payroll per year
+      no_paycheck: No paycheck entered.
+      plan: Plan
+      full_match_at: Full match at
+      vested: Employer money vested
+      no_employer_plan: No employer plan entered.
+      match_captured: Contributions capture the full employer match (%{match} a year).
+      match_missing: "Contributing %{current}, but the full match needs %{needed}. That leaves %{missed} a year of employer money unclaimed."
+    accounts:
+      edit:
+        heading: Accounts and tax buckets
+        subtitle: Choose the accounts that fund retirement and confirm each one's tax treatment.
+        empty: There are no asset accounts to link.
+        tax_bucket: Tax bucket
+        inferred: "Automatic: %{bucket}"
+        submit: Save accounts
+      update:
+        success: Accounts saved.
+    employer_plans:
+      edit:
+        heading: "%{name}'s employer plan"
+        subtitle: Use the plan's summary plan description or HR portal. Leave anything you're unsure of as "Not sure" and the planner will ask again.
+        errors: Fix these before saving
+        plan: Plan
+        employer_name: Employer
+        plan_type: Plan type
+        account: Account in Sure
+        no_account: Not linked
+        expense_ratio: Expense ratio (%)
+        expense_ratio_help: For the fund you use, or would use, in the plan.
+        match: Employer match
+        match_help: For example, "100% of the first 3% of pay, then 50% of the next 2%".
+        match_rate_1: Match rate (%)
+        match_up_to_1: On the first (% of pay)
+        match_rate_2: Second-tier match rate (%)
+        match_up_to_2: On the next (% of pay)
+        nonelective_rate: Non-elective contribution (% of pay)
+        match_true_up: Year-end true-up
+        match_true_up_help: Without a true-up, maxing out early in the year can forfeit match.
+        vesting: Vesting
+        vesting_type: Vesting schedule
+        vesting_years: Years to fully vest
+        service_start_date: Start date at employer
+        features: Plan features
+        features_help: These decide whether options like the mega backdoor Roth or rolling an IRA into the plan are open to you.
+        roth_option: Roth 401(k) contributions
+        after_tax_allowed: After-tax contributions
+        in_plan_roth_conversion: In-plan Roth conversion
+        in_service_withdrawal: In-service withdrawals
+        accepts_rollovers: Accepts incoming rollovers
+        hdhp_available: HSA-eligible health plan available
+        not_sure: Not sure
+        submit: Save employer plan
+      update:
+        success: Employer plan saved.
+      destroy:
+        success: Employer plan removed.
+    paychecks:
+      edit:
+        heading: "%{name}'s paycheck"
+        subtitle: Copy the amounts from one regular pay stub. Bank deposits show take-home pay only, so this is how pre-tax savings get counted.
+        errors: Fix these before saving
+        per_paycheck: Per paycheck
+        pay_frequency: Paid
+        gross_pay: Gross pay
+        traditional_401k: Traditional 401(k)
+        roth_401k: Roth 401(k)
+        after_tax_401k: After-tax 401(k)
+        hsa: HSA
+        health_premiums: Health insurance premiums
+        other_pretax: Other pre-tax deductions
+        per_year: Per year
+        annual_bonus: Bonuses
+        annual_bonus_help: Kept separate because irregular pay distorts averages.
+        employer_hsa_annual: Employer HSA contribution
+        submit: Save paycheck
+      update:
+        success: Paycheck saved.
+      destroy:
+        success: Paycheck removed.

@@ -1,0 +1,36 @@
+<div class="max-w-3xl space-y-6 pb-6 lg:pb-12">
+  <header>
+    <h1 class="text-2xl font-semibold text-primary"><%= t(".heading") %></h1>
+    <p class="text-sm text-secondary mt-1"><%= t(".subtitle") %></p>
+  </header>
+
+  <%= styled_form_with url: retirement_plan_accounts_path(@plan), scope: :accounts, method: :patch, class: "space-y-6" do |f| %>
+    <%= render DS::Card.new(class: "gap-0 p-0") do %>
+      <% if @accounts.empty? %>
+        <p class="text-sm text-secondary p-5"><%= t(".empty") %></p>
+      <% end %>
+      <ul class="divide-y divide-subdued">
+        <% @accounts.each do |account| %>
+          <% link = @links[account.id] %>
+          <% inferred = RetirementPlan::AccountLink.inferred_bucket_for(account) %>
+          <li class="flex flex-col gap-3 p-4 md:flex-row md:items-center md:justify-between">
+            <%= f.fields_for account.id.to_s, nil do |af| %>
+              <label class="flex items-center gap-3 text-sm text-primary">
+                <%= af.check_box :included, { checked: link.present? }, "1", "0" %>
+                <span>
+                  <span class="font-medium"><%= account.name %></span>
+                  <span class="block text-xs text-secondary"><%= format_money(account.balance_money) %></span>
+                </span>
+              </label>
+              <%= af.select :tax_bucket,
+                            Retirement::BUCKETS.map { |bucket| [ retirement_bucket_label(bucket), bucket ] },
+                            { label: t(".tax_bucket"), selected: link&.tax_bucket, container_class: "md:w-64 shrink-0",
+                              include_blank: t(".inferred", bucket: retirement_bucket_label(inferred)) } %>
+            <% end %>
+          </li>
+        <% end %>
+      </ul>
+    <% end %>
+    <%= f.submit t(".submit") %>
+  <% end %>
+</div>
