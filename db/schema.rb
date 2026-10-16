@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_11_151000) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_16_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -2235,6 +2235,84 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_11_151000) do
     t.index ["outflow_transaction_id"], name: "index_rejected_transfers_on_outflow_transaction_id"
   end
 
+  create_table "retirement_plan_account_links", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "account_id", null: false
+    t.datetime "created_at", null: false
+    t.uuid "retirement_plan_id", null: false
+    t.string "tax_bucket"
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_retirement_plan_account_links_on_account_id"
+    t.index ["retirement_plan_id", "account_id"], name: "index_retirement_plan_account_links_uniqueness", unique: true
+    t.index ["retirement_plan_id"], name: "index_retirement_plan_account_links_on_retirement_plan_id"
+    t.check_constraint "tax_bucket IS NULL OR (tax_bucket::text = ANY (ARRAY['taxable'::character varying, 'traditional'::character varying, 'roth'::character varying, 'hsa'::character varying]::text[]))", name: "chk_retirement_plan_account_links_tax_bucket"
+  end
+
+  create_table "retirement_plan_contributions", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.decimal "annual_amount", precision: 19, scale: 4, null: false
+    t.string "bucket", null: false
+    t.datetime "created_at", null: false
+    t.uuid "member_id", null: false
+    t.uuid "retirement_plan_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["member_id"], name: "index_retirement_plan_contributions_on_member_id"
+    t.index ["retirement_plan_id"], name: "index_retirement_plan_contributions_on_retirement_plan_id"
+    t.check_constraint "annual_amount >= 0::numeric", name: "chk_retirement_plan_contributions_amount_non_negative"
+    t.check_constraint "bucket::text = ANY (ARRAY['taxable'::character varying, 'traditional'::character varying, 'roth'::character varying, 'hsa'::character varying]::text[])", name: "chk_retirement_plan_contributions_bucket"
+  end
+
+  create_table "retirement_plan_income_streams", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.decimal "annual_amount", precision: 19, scale: 4, null: false
+    t.datetime "created_at", null: false
+    t.integer "end_age"
+    t.boolean "inflation_adjusted", default: true, null: false
+    t.string "kind", null: false
+    t.uuid "member_id", null: false
+    t.string "name"
+    t.uuid "retirement_plan_id", null: false
+    t.integer "start_age", null: false
+    t.datetime "updated_at", null: false
+    t.index ["member_id"], name: "index_retirement_plan_income_streams_on_member_id"
+    t.index ["retirement_plan_id"], name: "index_retirement_plan_income_streams_on_retirement_plan_id"
+    t.check_constraint "annual_amount >= 0::numeric", name: "chk_retirement_plan_income_streams_amount_non_negative"
+    t.check_constraint "end_age IS NULL OR end_age >= start_age", name: "chk_retirement_plan_income_streams_age_range"
+    t.check_constraint "kind::text = ANY (ARRAY['social_security'::character varying, 'pension'::character varying, 'annuity'::character varying, 'employment'::character varying, 'rental'::character varying, 'other'::character varying]::text[])", name: "chk_retirement_plan_income_streams_kind"
+  end
+
+  create_table "retirement_plan_members", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.date "birth_date", null: false
+    t.datetime "created_at", null: false
+    t.string "name", null: false
+    t.integer "planning_age", default: 95, null: false
+    t.integer "position", default: 0, null: false
+    t.integer "retirement_age", null: false
+    t.uuid "retirement_plan_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["retirement_plan_id", "position"], name: "idx_on_retirement_plan_id_position_ece0ea909d", unique: true
+    t.index ["retirement_plan_id"], name: "index_retirement_plan_members_on_retirement_plan_id"
+    t.check_constraint "\"position\" = ANY (ARRAY[0, 1])", name: "chk_retirement_plan_members_position"
+    t.check_constraint "retirement_age > 0 AND planning_age > retirement_age AND planning_age <= 120", name: "chk_retirement_plan_members_ages"
+  end
+
+  create_table "retirement_plans", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.decimal "annual_spending_override", precision: 19, scale: 4
+    t.datetime "created_at", null: false
+    t.string "currency", null: false
+    t.decimal "expected_return", precision: 6, scale: 4, default: "0.07", null: false
+    t.uuid "family_id", null: false
+    t.decimal "inflation_rate", precision: 6, scale: 4, default: "0.025", null: false
+    t.string "name", null: false
+    t.text "notes"
+    t.decimal "return_volatility", precision: 6, scale: 4, default: "0.15", null: false
+    t.decimal "traditional_tax_rate", precision: 6, scale: 4, default: "0.15", null: false
+    t.datetime "updated_at", null: false
+    t.decimal "withdrawal_rate", precision: 6, scale: 4, default: "0.04", null: false
+    t.index ["family_id"], name: "index_retirement_plans_on_family_id"
+    t.check_constraint "annual_spending_override >= 0::numeric", name: "chk_retirement_plans_spending_non_negative"
+    t.check_constraint "return_volatility >= 0::numeric", name: "chk_retirement_plans_volatility_non_negative"
+    t.check_constraint "traditional_tax_rate >= 0::numeric AND traditional_tax_rate < 1::numeric", name: "chk_retirement_plans_tax_rate_range"
+    t.check_constraint "withdrawal_rate > 0::numeric AND withdrawal_rate < 1::numeric", name: "chk_retirement_plans_withdrawal_rate_range"
+  end
+
   create_table "rule_actions", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.string "action_type", null: false
     t.datetime "created_at", null: false
@@ -3093,6 +3171,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_11_151000) do
   add_foreign_key "redbark_items", "families"
   add_foreign_key "rejected_transfers", "transactions", column: "inflow_transaction_id", on_delete: :cascade
   add_foreign_key "rejected_transfers", "transactions", column: "outflow_transaction_id", on_delete: :cascade
+  add_foreign_key "retirement_plan_account_links", "accounts", on_delete: :cascade
+  add_foreign_key "retirement_plan_account_links", "retirement_plans", on_delete: :cascade
+  add_foreign_key "retirement_plan_contributions", "retirement_plan_members", column: "member_id", on_delete: :cascade
+  add_foreign_key "retirement_plan_contributions", "retirement_plans", on_delete: :cascade
+  add_foreign_key "retirement_plan_income_streams", "retirement_plan_members", column: "member_id", on_delete: :cascade
+  add_foreign_key "retirement_plan_income_streams", "retirement_plans", on_delete: :cascade
+  add_foreign_key "retirement_plan_members", "retirement_plans", on_delete: :cascade
+  add_foreign_key "retirement_plans", "families", on_delete: :cascade
   add_foreign_key "rule_actions", "rules"
   add_foreign_key "rule_conditions", "rule_conditions", column: "parent_id"
   add_foreign_key "rule_conditions", "rules"

@@ -1,0 +1,30 @@
+---
+en:
+  activerecord:
+    models:
+      retirement_plan: Retirement plan
+    attributes:
+      retirement_plan:
+        name: Name
+        currency: Currency
+        annual_spending_override: Planned annual spending
+        inflation_rate: Inflation rate
+        expected_return: Expected annual return
+        return_volatility: Return volatility
+        withdrawal_rate: Withdrawal rate
+        traditional_tax_rate: Tax rate on traditional withdrawals
+        notes: Notes
+        members: People
+      retirement_plan/member:
+        name: Name
+        birth_date: Date of birth
+        retirement_age: Retirement age
+        planning_age: Plan until age
+      retirement_plan/account_link:
+        tax_bucket: Tax bucket
+    errors:
+      models:
+        retirement_plan:
+          attributes:
+            members:
+              count: A plan covers one or up to %{count} people.

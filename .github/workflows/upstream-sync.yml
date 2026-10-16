@@ -1,0 +1,59 @@
+name: Upstream sync
+
+# Fork-only (see FORK.md): mirror we-promise/sure main onto `upstream-sync`
+# and keep a PR open from it into main. Conflicts are resolved locally.
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '23 6 * * 1'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: upstream-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    if: github.repository == 'lsands65/not-sure'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out fork
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Mirror upstream main onto upstream-sync
+        id: mirror
+        shell: bash
+        run: |
+          git remote add upstream https://github.com/we-promise/sure.git
+          git fetch --no-tags upstream main
+          git fetch --no-tags origin main
+
+          behind="$(git rev-list --count origin/main..upstream/main)"
+          echo "behind=${behind}" >> "$GITHUB_OUTPUT"
+          if [ "$behind" -eq 0 ]; then
+            echo "main already contains upstream/main"
+            exit 0
+          fi
+
+          git push --force origin refs/remotes/upstream/main:refs/heads/upstream-sync
+
+      - name: Open or refresh the sync PR
+        if: steps.mirror.outputs.behind != '0'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BEHIND: ${{ steps.mirror.outputs.behind }}
+        run: |
+          body="Brings in ${BEHIND} commit(s) from we-promise/sure main. If this conflicts, merge \`upstream/main\` locally as described in FORK.md."
+          existing="$(gh pr list --head upstream-sync --base main --state open --json number --jq '.[0].number')"
+          if [ -n "$existing" ]; then
+            gh pr edit "$existing" --body "$body"
+          else
+            gh pr create --head upstream-sync --base main --title "Sync with upstream Sure" --body "$body"
+          fi

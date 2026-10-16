@@ -1,0 +1,15 @@
+dylan_primary:
+  retirement_plan: dylan_plan
+  position: 0
+  name: Bob
+  birth_date: 1980-06-15
+  retirement_age: 65
+  planning_age: 95
+
+dylan_spouse:
+  retirement_plan: dylan_plan
+  position: 1
+  name: Jane
+  birth_date: 1982-03-01
+  retirement_age: 63
+  planning_age: 95

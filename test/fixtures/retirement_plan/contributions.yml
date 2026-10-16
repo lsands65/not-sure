@@ -1,0 +1,11 @@
+primary_401k:
+  retirement_plan: dylan_plan
+  member: dylan_primary
+  bucket: traditional
+  annual_amount: 20000
+
+spouse_roth:
+  retirement_plan: dylan_plan
+  member: dylan_spouse
+  bucket: roth
+  annual_amount: 7000

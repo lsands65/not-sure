@@ -1,0 +1,16 @@
+primary_social_security:
+  retirement_plan: dylan_plan
+  member: dylan_primary
+  kind: social_security
+  annual_amount: 30000
+  start_age: 67
+  inflation_adjusted: true
+
+spouse_pension:
+  retirement_plan: dylan_plan
+  member: dylan_spouse
+  kind: pension
+  name: State pension
+  annual_amount: 12000
+  start_age: 63
+  inflation_adjusted: false
